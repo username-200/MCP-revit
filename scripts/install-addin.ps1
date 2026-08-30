@@ -4,6 +4,7 @@
 
 .EXAMPLE
     .\scripts\install-addin.ps1 -RevitVersion 2023
+    .\scripts\install-addin.ps1 -RevitVersion 2023 -Clean
     .\scripts\install-addin.ps1 -RevitVersion 2025 -Token "s3cret" -NoAutoStart
 #>
 [CmdletBinding()]
@@ -17,7 +18,10 @@ param(
 
     [string]$Token = "",
 
-    [switch]$NoAutoStart
+    [switch]$NoAutoStart,
+
+    # Снести прошлую сборку и установленный аддин, затем собрать с нуля.
+    [switch]$Clean
 )
 
 $ErrorActionPreference = "Stop"
@@ -56,6 +60,34 @@ if (-not $sdks) {
 "@
 }
 
+$addinsDir = Join-Path $env:APPDATA "Autodesk\Revit\Addins\$RevitVersion"
+$targetDir = Join-Path $addinsDir "McpRevit"
+
+# Загруженный аддин держит свою DLL открытой, и копирование поверх падает.
+if (Get-Process -Name "Revit" -ErrorAction SilentlyContinue) {
+    if (Test-Path (Join-Path $targetDir "McpRevit.dll")) {
+        throw "Revit запущен и держит установленный аддин. Закройте Revit и повторите."
+    }
+    Write-Warning "Revit запущен: перезапустите его после установки, иначе аддин не подхватится."
+}
+
+if ($Clean) {
+    Write-Host "Очистка прошлой сборки и установленного аддина..." -ForegroundColor Cyan
+    foreach ($dir in @("bin", "obj")) {
+        $path = Join-Path $root "revit-addin\McpRevit\$dir"
+        if (Test-Path $path) {
+            Remove-Item $path -Recurse -Force
+            Write-Host "  удалено: $path" -ForegroundColor DarkGray
+        }
+    }
+    foreach ($path in @($targetDir, (Join-Path $addinsDir "McpRevit.addin"))) {
+        if (Test-Path $path) {
+            Remove-Item $path -Recurse -Force
+            Write-Host "  удалено: $path" -ForegroundColor DarkGray
+        }
+    }
+}
+
 Write-Host "Сборка аддина для Revit $RevitVersion..." -ForegroundColor Cyan
 dotnet build $project -c Release -p:RevitVersion=$RevitVersion -p:RevitApiDir=$RevitApiDir
 if ($LASTEXITCODE -ne 0) { throw "Сборка завершилась с ошибкой." }
@@ -73,9 +105,6 @@ if (-not $built) {
 
 $output = $built.Directory.FullName
 Write-Host "Собрано: $($built.FullName)" -ForegroundColor DarkGray
-
-$addinsDir = Join-Path $env:APPDATA "Autodesk\Revit\Addins\$RevitVersion"
-$targetDir = Join-Path $addinsDir "McpRevit"
 
 New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
 
