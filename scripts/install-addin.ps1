@@ -37,6 +37,25 @@ if ($Token -match '[^\x20-\x7E]') {
     throw "Токен должен состоять только из ASCII-символов: он передаётся в HTTP-заголовке."
 }
 
+# dotnet может быть установлен как один только runtime — для сборки нужен SDK.
+if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
+    throw @"
+Команда 'dotnet' не найдена. Установите .NET SDK:
+    winget install Microsoft.DotNet.SDK.8
+или скачайте с https://dotnet.microsoft.com/download
+"@
+}
+
+$sdks = & dotnet --list-sdks 2>$null
+if (-not $sdks) {
+    throw @"
+Установлен только runtime .NET, а для сборки нужен SDK. Поставьте его:
+    winget install Microsoft.DotNet.SDK.8
+или скачайте с https://dotnet.microsoft.com/download
+После установки откройте новое окно PowerShell и повторите запуск.
+"@
+}
+
 Write-Host "Сборка аддина для Revit $RevitVersion..." -ForegroundColor Cyan
 dotnet build $project -c Release -p:RevitVersion=$RevitVersion -p:RevitApiDir=$RevitApiDir
 if ($LASTEXITCODE -ne 0) { throw "Сборка завершилась с ошибкой." }
