@@ -17,8 +17,8 @@ namespace McpRevit.Commands
                 var doc = Params.Document(app);
                 var level = Params.Element<Level>(doc, p, "level_id");
                 var wallTypeId = ResolveWallType(doc, p);
-                var heightFt = Units.MmToFeet(Params.DoubleOr(p, "height_mm", 3000));
-                var baseOffsetFt = Units.MmToFeet(Params.DoubleOr(p, "base_offset_mm", 0));
+                var heightFt = UnitConv.MmToFeet(Params.DoubleOr(p, "height_mm", 3000));
+                var baseOffsetFt = UnitConv.MmToFeet(Params.DoubleOr(p, "base_offset_mm", 0));
                 var structural = Params.BoolOr(p, "structural", false);
 
                 var segments = new List<(XYZ Start, XYZ End)>();
@@ -40,7 +40,7 @@ namespace McpRevit.Commands
                 var wallTypeId = ResolveWallType(doc, p);
                 var structural = Params.BoolOr(p, "structural", false);
 
-                var minLengthFt = Units.MmToFeet(Params.DoubleOr(p, "min_length_mm", 500));
+                var minLengthFt = UnitConv.MmToFeet(Params.DoubleOr(p, "min_length_mm", 500));
                 var snapAngle = Params.DoubleOr(p, "snap_angle_deg", 0);
                 var fixedHeightMm = Params.DoubleOr(p, "height_mm", 0);
 
@@ -68,8 +68,8 @@ namespace McpRevit.Commands
                     var start = Params.PointFrom((JObject)trace["start"], "planes[].trace.start");
                     var end = Params.PointFrom((JObject)trace["end"], "planes[].trace.end");
 
-                    var baseZ = Units.MmToFeet((double)(plane["min_z_mm"] ?? 0.0));
-                    var topZ = Units.MmToFeet((double)(plane["max_z_mm"] ?? 0.0));
+                    var baseZ = UnitConv.MmToFeet((double)(plane["min_z_mm"] ?? 0.0));
+                    var topZ = UnitConv.MmToFeet((double)(plane["max_z_mm"] ?? 0.0));
 
                     start = new XYZ(start.X, start.Y, baseZ);
                     end = new XYZ(end.X, end.Y, baseZ);
@@ -85,8 +85,8 @@ namespace McpRevit.Commands
 
                     segments.Add((start, end));
                     heights.Add(fixedHeightMm > 0
-                        ? Units.MmToFeet(fixedHeightMm)
-                        : Math.Max(topZ - baseZ, Units.MmToFeet(100)));
+                        ? UnitConv.MmToFeet(fixedHeightMm)
+                        : Math.Max(topZ - baseZ, UnitConv.MmToFeet(100)));
                 }
 
                 var result = CreateWalls(doc, segments, wallTypeId, level, heights, structural);
@@ -107,7 +107,7 @@ namespace McpRevit.Commands
                 if (boundary.Count < 3)
                     throw new CommandException("Контур перекрытия должен содержать минимум три точки.");
 
-                var elevationFt = level.Elevation + Units.MmToFeet(Params.DoubleOr(p, "offset_mm", 0));
+                var elevationFt = level.Elevation + UnitConv.MmToFeet(Params.DoubleOr(p, "offset_mm", 0));
                 var loop = BuildClosedLoop(boundary, elevationFt);
 
                 using (var tx = new Transaction(doc, "MCP: создание перекрытия"))
@@ -120,7 +120,7 @@ namespace McpRevit.Commands
                     {
                         ["id"] = RevitIds.ToLong(floor.Id),
                         ["level"] = level.Name,
-                        ["area_m2"] = Units.SqFeetToSqM(
+                        ["area_m2"] = UnitConv.SqFeetToSqM(
                             floor.get_Parameter(BuiltInParameter.HOST_AREA_COMPUTED)?.AsDouble() ?? 0.0)
                     };
                 }
@@ -200,8 +200,8 @@ namespace McpRevit.Commands
                         created.Add(new Dictionary<string, object>
                         {
                             ["id"] = RevitIds.ToLong(wall.Id),
-                            ["length_mm"] = Units.FeetToMm(start.DistanceTo(end)),
-                            ["height_mm"] = Units.FeetToMm(heights[i])
+                            ["length_mm"] = UnitConv.FeetToMm(start.DistanceTo(end)),
+                            ["height_mm"] = UnitConv.FeetToMm(heights[i])
                         });
                     }
                     catch (Exception ex)
@@ -235,7 +235,7 @@ namespace McpRevit.Commands
             var length = Math.Sqrt(delta.X * delta.X + delta.Y * delta.Y);
             if (length < 1e-9) return (start, end);
 
-            var step = Units.DegreesToRadians(stepDegrees);
+            var step = UnitConv.DegreesToRadians(stepDegrees);
             var angle = Math.Atan2(delta.Y, delta.X);
             var snapped = Math.Round(angle / step) * step;
 

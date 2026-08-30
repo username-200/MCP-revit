@@ -44,9 +44,9 @@ namespace McpRevit.Geometry
         public PlaneKind Kind(double angleToleranceDegrees)
         {
             var cos = Math.Abs(Normal.Z);
-            var tolerance = Math.Cos(Units.DegreesToRadians(90.0 - angleToleranceDegrees));
+            var tolerance = Math.Cos(UnitConv.DegreesToRadians(90.0 - angleToleranceDegrees));
 
-            if (cos >= Math.Cos(Units.DegreesToRadians(angleToleranceDegrees)))
+            if (cos >= Math.Cos(UnitConv.DegreesToRadians(angleToleranceDegrees)))
                 return PlaneKind.Horizontal;
             if (cos <= tolerance)
                 return PlaneKind.Vertical;
@@ -63,16 +63,16 @@ namespace McpRevit.Geometry
                 ["normal"] = Dto.Vector(Normal),
                 ["centroid"] = Dto.Point(Centroid),
                 ["inlier_count"] = InlierCount,
-                ["rmse_mm"] = Units.FeetToMm(Rmse),
-                ["extent_u_mm"] = Units.FeetToMm(ExtentU),
-                ["extent_v_mm"] = Units.FeetToMm(ExtentV),
-                ["min_z_mm"] = Units.FeetToMm(MinZ),
-                ["max_z_mm"] = Units.FeetToMm(MaxZ),
-                ["elevation_mm"] = Units.FeetToMm(Centroid.Z),
+                ["rmse_mm"] = UnitConv.FeetToMm(Rmse),
+                ["extent_u_mm"] = UnitConv.FeetToMm(ExtentU),
+                ["extent_v_mm"] = UnitConv.FeetToMm(ExtentV),
+                ["min_z_mm"] = UnitConv.FeetToMm(MinZ),
+                ["max_z_mm"] = UnitConv.FeetToMm(MaxZ),
+                ["elevation_mm"] = UnitConv.FeetToMm(Centroid.Z),
                 // Угол поворота следа стены в плане — удобно для проверки ортогональности обмера.
                 ["heading_deg"] = TraceStart == null
                     ? (object)null
-                    : Units.RadiansToDegrees(Math.Atan2(
+                    : UnitConv.RadiansToDegrees(Math.Atan2(
                         TraceEnd.Y - TraceStart.Y, TraceEnd.X - TraceStart.X))
             };
 
@@ -82,7 +82,7 @@ namespace McpRevit.Geometry
                 {
                     ["start"] = Dto.Point(TraceStart),
                     ["end"] = Dto.Point(TraceEnd),
-                    ["length_mm"] = Units.FeetToMm(TraceStart.DistanceTo(TraceEnd))
+                    ["length_mm"] = UnitConv.FeetToMm(TraceStart.DistanceTo(TraceEnd))
                 };
             }
 

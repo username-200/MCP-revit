@@ -71,7 +71,7 @@ namespace McpRevit.Commands
             {
                 var doc = Params.Document(app);
                 var name = Params.StringOr(p, "name", null);
-                var elevationFt = Units.MmToFeet(Params.Double(p, "elevation_mm"));
+                var elevationFt = UnitConv.MmToFeet(Params.Double(p, "elevation_mm"));
 
                 using (var tx = new Transaction(doc, "MCP: создание уровня"))
                 {

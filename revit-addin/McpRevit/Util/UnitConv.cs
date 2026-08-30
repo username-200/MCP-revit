@@ -7,7 +7,7 @@ namespace McpRevit.Util
     /// Внутренние единицы Revit — десятичные футы. Наружу отдаём миллиметры,
     /// чтобы MCP-клиенту не приходилось знать про футы.
     /// </summary>
-    public static class Units
+    public static class UnitConv
     {
         public const double MmPerFoot = 304.8;
 

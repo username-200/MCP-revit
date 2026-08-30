@@ -8,9 +8,9 @@ namespace McpRevit.Util
     {
         public static Dictionary<string, object> Point(XYZ p) => new Dictionary<string, object>
         {
-            ["x"] = Units.FeetToMm(p.X),
-            ["y"] = Units.FeetToMm(p.Y),
-            ["z"] = Units.FeetToMm(p.Z)
+            ["x"] = UnitConv.FeetToMm(p.X),
+            ["y"] = UnitConv.FeetToMm(p.Y),
+            ["z"] = UnitConv.FeetToMm(p.Z)
         };
 
         public static Dictionary<string, object> Vector(XYZ v) => new Dictionary<string, object>
@@ -32,7 +32,7 @@ namespace McpRevit.Util
         {
             ["id"] = RevitIds.ToLong(level.Id),
             ["name"] = level.Name,
-            ["elevation_mm"] = Units.FeetToMm(level.Elevation)
+            ["elevation_mm"] = UnitConv.FeetToMm(level.Elevation)
         };
 
         public static Dictionary<string, object> View(View view) => new Dictionary<string, object>
@@ -55,9 +55,9 @@ namespace McpRevit.Util
                 ["max"] = Point(box.Transform.OfPoint(box.Max)),
                 ["size_mm"] = new Dictionary<string, object>
                 {
-                    ["x"] = Units.FeetToMm(box.Max.X - box.Min.X),
-                    ["y"] = Units.FeetToMm(box.Max.Y - box.Min.Y),
-                    ["z"] = Units.FeetToMm(box.Max.Z - box.Min.Z)
+                    ["x"] = UnitConv.FeetToMm(box.Max.X - box.Min.X),
+                    ["y"] = UnitConv.FeetToMm(box.Max.Y - box.Min.Y),
+                    ["z"] = UnitConv.FeetToMm(box.Max.Z - box.Min.Z)
                 }
             };
         }

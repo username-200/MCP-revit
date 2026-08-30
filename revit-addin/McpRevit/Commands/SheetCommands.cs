@@ -107,8 +107,8 @@ namespace McpRevit.Commands
                         ["center"] = Dto.Point(viewport.GetBoxCenter()),
                         ["size_mm"] = new Dictionary<string, object>
                         {
-                            ["width"] = Units.FeetToMm(outline.MaximumPoint.X - outline.MinimumPoint.X),
-                            ["height"] = Units.FeetToMm(outline.MaximumPoint.Y - outline.MinimumPoint.Y)
+                            ["width"] = UnitConv.FeetToMm(outline.MaximumPoint.X - outline.MinimumPoint.X),
+                            ["height"] = UnitConv.FeetToMm(outline.MaximumPoint.Y - outline.MinimumPoint.Y)
                         }
                     };
                 }
@@ -198,8 +198,8 @@ namespace McpRevit.Commands
 
             return new Dictionary<string, object>
             {
-                ["width"] = Units.FeetToMm(width),
-                ["height"] = Units.FeetToMm(height)
+                ["width"] = UnitConv.FeetToMm(width),
+                ["height"] = UnitConv.FeetToMm(height)
             };
         }
 
@@ -225,7 +225,7 @@ namespace McpRevit.Commands
                         break;
                     case StorageType.Double:
                         // Числовые параметры листа задаются в мм — переводим во внутренние единицы.
-                        parameter.Set(Units.MmToFeet((double)value));
+                        parameter.Set(UnitConv.MmToFeet((double)value));
                         break;
                     case StorageType.ElementId:
                         parameter.Set(RevitIds.FromLong((long)value));

@@ -51,11 +51,11 @@ namespace McpRevit.Commands
                         "Revit принимает только .rcp и .rcs. Исходные .e57/.las/.pts сконвертируйте " +
                         "в Autodesk ReCap.");
 
-                var offset = Units.PointFromMm(
+                var offset = UnitConv.PointFromMm(
                     Params.DoubleOr(p, "offset_x_mm", 0),
                     Params.DoubleOr(p, "offset_y_mm", 0),
                     Params.DoubleOr(p, "offset_z_mm", 0));
-                var rotation = Units.DegreesToRadians(Params.DoubleOr(p, "rotation_deg", 0));
+                var rotation = UnitConv.DegreesToRadians(Params.DoubleOr(p, "rotation_deg", 0));
 
                 var transform = Transform.CreateTranslation(offset);
                 if (Math.Abs(rotation) > 1e-12)
@@ -89,7 +89,7 @@ namespace McpRevit.Commands
                 return new Dictionary<string, object>
                 {
                     ["count"] = points.Count,
-                    ["average_distance_mm"] = Units.FeetToMm(requestedDensityFt),
+                    ["average_distance_mm"] = UnitConv.FeetToMm(requestedDensityFt),
                     ["points"] = points.Select(Dto.Point).ToList()
                 };
             });
@@ -103,7 +103,7 @@ namespace McpRevit.Commands
 
                 var options = new PlaneDetectorOptions
                 {
-                    Tolerance = Units.MmToFeet(Params.DoubleOr(p, "distance_tolerance_mm", 25.0)),
+                    Tolerance = UnitConv.MmToFeet(Params.DoubleOr(p, "distance_tolerance_mm", 25.0)),
                     MaxPlanes = Params.IntOr(p, "max_planes", 12),
                     MinInliers = Params.IntOr(p, "min_inliers", 200),
                     MinInlierRatio = Params.DoubleOr(p, "min_inlier_ratio", 0.02),
@@ -149,7 +149,7 @@ namespace McpRevit.Commands
             var (minModel, maxModel) = ResolveBox(instance, p);
             var densityMm = Params.DoubleOr(p, "average_distance_mm", 0);
             densityFt = densityMm > 0
-                ? Units.MmToFeet(densityMm)
+                ? UnitConv.MmToFeet(densityMm)
                 : EstimateDensity(minModel, maxModel, maxPoints);
 
             var filter = BuildBoxFilter(toCloud.OfPoint(minModel), toCloud.OfPoint(maxModel));
@@ -204,7 +204,7 @@ namespace McpRevit.Commands
         {
             var volume = Math.Max((max.X - min.X) * (max.Y - min.Y) * (max.Z - min.Z), 1e-6);
             var step = Math.Pow(volume / Math.Max(maxPoints, 1), 1.0 / 3.0);
-            return Math.Max(step, Units.MmToFeet(5.0));
+            return Math.Max(step, UnitConv.MmToFeet(5.0));
         }
 
         private static PointCloudFilter BuildBoxFilter(XYZ min, XYZ max)
@@ -217,11 +217,11 @@ namespace McpRevit.Commands
             var planes = new List<Plane>
             {
                 Plane.CreateByNormalAndOrigin(XYZ.BasisX, lo),
-                Plane.CreateByNormalAndOrigin(-XYZ.BasisX, hi),
+                Plane.CreateByNormalAndOrigin(XYZ.BasisX.Negate(), hi),
                 Plane.CreateByNormalAndOrigin(XYZ.BasisY, lo),
-                Plane.CreateByNormalAndOrigin(-XYZ.BasisY, hi),
+                Plane.CreateByNormalAndOrigin(XYZ.BasisY.Negate(), hi),
                 Plane.CreateByNormalAndOrigin(XYZ.BasisZ, lo),
-                Plane.CreateByNormalAndOrigin(-XYZ.BasisZ, hi)
+                Plane.CreateByNormalAndOrigin(XYZ.BasisZ.Negate(), hi)
             };
 
             return PointCloudFilterFactory.CreateMultiPlaneFilter(planes);

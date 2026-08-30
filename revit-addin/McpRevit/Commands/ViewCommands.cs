@@ -57,9 +57,9 @@ namespace McpRevit.Commands
 
                 var origin = Params.Point(p, "origin");
                 var direction = Params.Direction(p, "direction");
-                var widthFt = Units.MmToFeet(Params.DoubleOr(p, "width_mm", 10000));
-                var heightFt = Units.MmToFeet(Params.DoubleOr(p, "height_mm", 4000));
-                var depthFt = Units.MmToFeet(Params.DoubleOr(p, "depth_mm", 10000));
+                var widthFt = UnitConv.MmToFeet(Params.DoubleOr(p, "width_mm", 10000));
+                var heightFt = UnitConv.MmToFeet(Params.DoubleOr(p, "height_mm", 4000));
+                var depthFt = UnitConv.MmToFeet(Params.DoubleOr(p, "depth_mm", 10000));
 
                 var box = BuildSectionBox(origin, direction, widthFt, heightFt, depthFt);
 

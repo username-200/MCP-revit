@@ -86,7 +86,12 @@ namespace McpRevit.Commands
             var options = DWGExportOptions.GetPredefinedOptions(doc, setupName);
             if (options == null)
             {
-                var available = ExportDWGSettings.GetPredefinedSettingsNames(doc);
+                // Сохранённые наборы экспорта живут в документе как элементы.
+                var available = new FilteredElementCollector(doc)
+                    .OfClass(typeof(ExportDWGSettings))
+                    .Cast<ExportDWGSettings>()
+                    .Select(s => s.Name)
+                    .ToList();
                 throw new CommandException(
                     "Настройка экспорта DWG '" + setupName + "' не найдена. Доступные: " +
                     (available.Count == 0 ? "нет сохранённых настроек" : string.Join(", ", available)),

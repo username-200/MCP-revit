@@ -87,7 +87,7 @@ namespace McpRevit.Util
             if (x == null || y == null)
                 throw new CommandException("В точке '" + context + "' обязательны поля x и y (мм).");
 
-            return Units.PointFromMm((double)x, (double)y, (double)(point["z"] ?? 0.0));
+            return UnitConv.PointFromMm((double)x, (double)y, (double)(point["z"] ?? 0.0));
         }
 
         /// <summary>Вектор вида {"x": 0, "y": 0, "z": 1}; единицы не важны, вектор нормируется.</summary>
