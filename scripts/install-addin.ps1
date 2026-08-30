@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Собирает аддин MCP Revit Bridge и устанавливает его в папку аддинов Revit.
 
@@ -41,13 +41,26 @@ Write-Host "Сборка аддина для Revit $RevitVersion..." -Foreground
 dotnet build $project -c Release -p:RevitVersion=$RevitVersion -p:RevitApiDir=$RevitApiDir
 if ($LASTEXITCODE -ne 0) { throw "Сборка завершилась с ошибкой." }
 
-$output = Join-Path $root "revit-addin\McpRevit\bin\Release"
+# Путь к сборке зависит от платформы и TFM, поэтому ищем свежий McpRevit.dll,
+# а не полагаемся на bin\Release.
+$binDir = Join-Path $root "revit-addin\McpRevit\bin"
+$built = Get-ChildItem -Path $binDir -Recurse -Filter "McpRevit.dll" -ErrorAction SilentlyContinue |
+    Sort-Object LastWriteTime -Descending |
+    Select-Object -First 1
+
+if (-not $built) {
+    throw "Сборка McpRevit.dll не найдена в '$binDir'. Проверьте вывод dotnet build выше."
+}
+
+$output = $built.Directory.FullName
+Write-Host "Собрано: $($built.FullName)" -ForegroundColor DarkGray
+
 $addinsDir = Join-Path $env:APPDATA "Autodesk\Revit\Addins\$RevitVersion"
 $targetDir = Join-Path $addinsDir "McpRevit"
 
 New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
 
-Copy-Item (Join-Path $output "McpRevit.dll") $targetDir -Force
+Copy-Item $built.FullName $targetDir -Force
 Copy-Item (Join-Path $output "McpRevit.pdb") $targetDir -Force -ErrorAction SilentlyContinue
 
 # Манифест лежит уровнем выше, а сборка — в подпапке: правим путь к DLL.

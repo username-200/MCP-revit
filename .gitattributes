@@ -1,0 +1,12 @@
+# Windows PowerShell 5.1 читает .ps1 без BOM как ANSI (cp1251) и ломается
+# на кириллице, поэтому скрипты хранятся в UTF-8 с BOM и с CRLF.
+*.ps1 text eol=crlf
+
+*.cs      text eol=crlf
+*.csproj  text eol=crlf
+*.sln     text eol=crlf
+*.addin   text eol=crlf
+
+*.py   text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
