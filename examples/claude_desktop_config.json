@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "revit": {
+      "command": "C:\\MCP-revit\\.venv\\Scripts\\python.exe",
+      "args": ["-m", "revit_mcp.server"],
+      "env": {
+        "PYTHONPATH": "C:\\MCP-revit\\mcp-server\\src",
+        "REVIT_BRIDGE_URL": "http://127.0.0.1:8765",
+        "REVIT_BRIDGE_TOKEN": "",
+        "REVIT_MCP_TEMPLATES_DIR": "C:\\MCP-revit\\templates"
+      }
+    }
+  }
+}

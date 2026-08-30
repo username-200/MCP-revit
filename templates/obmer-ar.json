@@ -1,0 +1,77 @@
+{
+  "name": "obmer-ar",
+  "description": "Обмерный комплект АР: план на каждый уровень, два разреза и 3D-вид, выгрузка в PDF",
+  "titleblock": "A1 метрический",
+  "numbering": {
+    "prefix": "АР-",
+    "start": 1,
+    "digits": 2
+  },
+  "sheet_parameters": {
+    "Дата": "{date}",
+    "Стадия": "Обмерные работы"
+  },
+  "sheets": [
+    {
+      "for_each_level": true,
+      "number": "{auto_number}",
+      "name": "План {level_name}",
+      "parameters": {
+        "Наименование": "План {level_name}"
+      },
+      "views": [
+        {
+          "kind": "plan",
+          "name": "Обмерный план {level_name}",
+          "scale": 50,
+          "detail_level": "Fine"
+        }
+      ]
+    },
+    {
+      "number": "{auto_number}",
+      "name": "Разрезы",
+      "views": [
+        {
+          "kind": "section",
+          "name": "Разрез 1-1",
+          "scale": 50,
+          "origin": { "x": 0, "y": 0, "z": 0 },
+          "direction": { "x": 0, "y": 1, "z": 0 },
+          "width_mm": 20000,
+          "height_mm": 8000,
+          "depth_mm": 15000,
+          "position": { "x_mm": 250, "y_mm": 400 }
+        },
+        {
+          "kind": "section",
+          "name": "Разрез 2-2",
+          "scale": 50,
+          "origin": { "x": 0, "y": 0, "z": 0 },
+          "direction": { "x": 1, "y": 0, "z": 0 },
+          "width_mm": 20000,
+          "height_mm": 8000,
+          "depth_mm": 15000,
+          "position": { "x_mm": 250, "y_mm": 150 }
+        }
+      ]
+    },
+    {
+      "number": "{auto_number}",
+      "name": "Общий вид",
+      "views": [
+        {
+          "kind": "3d",
+          "name": "Обмерная модель — общий вид",
+          "scale": 100
+        }
+      ]
+    }
+  ],
+  "export": {
+    "format": "pdf",
+    "combine": true,
+    "file_name": "Обмерный комплект",
+    "folder": "C:\\Revit\\Выгрузка"
+  }
+}

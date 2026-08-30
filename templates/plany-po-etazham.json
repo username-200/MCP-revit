@@ -1,0 +1,22 @@
+{
+  "name": "plany-po-etazham",
+  "description": "Минимальный комплект: по одному листу с планом на каждый этаж, без выгрузки",
+  "numbering": {
+    "prefix": "П-",
+    "start": 1,
+    "digits": 2
+  },
+  "sheets": [
+    {
+      "for_each_level": true,
+      "name": "План этажа {level_name}",
+      "views": [
+        {
+          "kind": "plan",
+          "name": "План {level_name} (М1:100)",
+          "scale": 100
+        }
+      ]
+    }
+  ]
+}
