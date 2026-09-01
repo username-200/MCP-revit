@@ -29,8 +29,38 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 $project = Join-Path $root "revit-addin\McpRevit\McpRevit.csproj"
 
+# Revit может стоять не на системном диске, поэтому путь установки берём из реестра.
+function Find-RevitApiDir([string]$version) {
+    $key = "HKLM:\SOFTWARE\Autodesk\Revit\$version"
+    if (-not (Test-Path $key)) { return $null }
+
+    foreach ($product in Get-ChildItem $key -ErrorAction SilentlyContinue) {
+        $location = (Get-ItemProperty $product.PSPath -Name "InstallationLocation" `
+            -ErrorAction SilentlyContinue).InstallationLocation
+        if ($location -and (Test-Path (Join-Path $location "RevitAPI.dll"))) {
+            return $location
+        }
+    }
+
+    return $null
+}
+
+$defaultApiDir = "C:\Program Files\Autodesk\Revit $RevitVersion"
+
 if (-not $RevitApiDir) {
-    $RevitApiDir = "C:\Program Files\Autodesk\Revit $RevitVersion"
+    if (Test-Path (Join-Path $defaultApiDir "RevitAPI.dll")) {
+        $RevitApiDir = $defaultApiDir
+    }
+    else {
+        $RevitApiDir = Find-RevitApiDir $RevitVersion
+        if ($RevitApiDir) {
+            Write-Host "Revit $RevitVersion найден в реестре: $RevitApiDir" -ForegroundColor DarkGray
+        }
+        else {
+            # Путь по умолчанию — чтобы в сообщении об ошибке было что показать.
+            $RevitApiDir = $defaultApiDir
+        }
+    }
 }
 
 # Все три библиотеки берутся из установленного Revit: если чего-то нет,
@@ -41,7 +71,8 @@ $missing = $required | Where-Object { -not (Test-Path (Join-Path $RevitApiDir $_
 if ($missing) {
     throw @"
 В '$RevitApiDir' не хватает библиотек Revit: $($missing -join ', ').
-Проверьте, что Revit $RevitVersion установлен, или укажите путь: -RevitApiDir "путь"
+Revit $RevitVersion не найден ни там, ни в реестре. Укажите папку с RevitAPI.dll явно:
+    .\scripts\install-addin.ps1 -RevitVersion $RevitVersion -RevitApiDir "D:\Revit $RevitVersion"
 "@
 }
 
