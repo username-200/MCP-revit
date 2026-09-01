@@ -3,13 +3,18 @@
   <!--
     Сборка под конкретную версию Revit:
         dotnet build -c Release -p:RevitVersion=2023
-        dotnet build -c Release -p:RevitVersion=2025
+        dotnet build -c Release -p:RevitVersion=2026
     По умолчанию — Revit 2023.
+
+    До 2025 Revit работает на .NET Framework 4.8, начиная с 2025 — на .NET 8.
+    Если Autodesk сменит рантайм в будущей версии, целевую платформу можно
+    задать вручную: -p:RevitTfm=net9.0-windows
   -->
   <PropertyGroup>
     <RevitVersion Condition="'$(RevitVersion)' == ''">2023</RevitVersion>
     <TargetFramework Condition="'$(RevitVersion)' &lt; '2025'">net48</TargetFramework>
     <TargetFramework Condition="'$(RevitVersion)' &gt;= '2025'">net8.0-windows</TargetFramework>
+    <TargetFramework Condition="'$(RevitTfm)' != ''">$(RevitTfm)</TargetFramework>
     <LangVersion>latest</LangVersion>
     <AssemblyName>McpRevit</AssemblyName>
     <RootNamespace>McpRevit</RootNamespace>

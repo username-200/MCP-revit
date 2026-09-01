@@ -33,8 +33,16 @@ if (-not $RevitApiDir) {
     $RevitApiDir = "C:\Program Files\Autodesk\Revit $RevitVersion"
 }
 
-if (-not (Test-Path (Join-Path $RevitApiDir "RevitAPI.dll"))) {
-    throw "RevitAPI.dll не найден в '$RevitApiDir'. Укажите путь параметром -RevitApiDir."
+# Все три библиотеки берутся из установленного Revit: если чего-то нет,
+# понятнее упасть здесь, чем на HintPath внутри сборки.
+$required = @("RevitAPI.dll", "RevitAPIUI.dll", "Newtonsoft.Json.dll")
+$missing = $required | Where-Object { -not (Test-Path (Join-Path $RevitApiDir $_)) }
+
+if ($missing) {
+    throw @"
+В '$RevitApiDir' не хватает библиотек Revit: $($missing -join ', ').
+Проверьте, что Revit $RevitVersion установлен, или укажите путь: -RevitApiDir "путь"
+"@
 }
 
 if ($Token -match '[^\x20-\x7E]') {
