@@ -118,11 +118,17 @@ if ($info.error) {
     Write-Err "Плагин вернул ошибку: $($info.error.message)"
     exit 1
 }
+if (-not $info.result.Success) {
+    Write-Err "Плагин отказал: $($info.result.Message)"
+    exit 1
+}
 Write-Ok "модель отвечает"
-Write-Info ($info.result | ConvertTo-Json -Depth 6)
+# Полезная нагрузка лежит на два уровня глубже: result.Response, не result.
+$payload = $info.result.Response
+Write-Info ($payload | ConvertTo-Json -Depth 6)
 
 # Отметка уровня нужна как baseLevel: плагин ждёт миллиметры, а не ID уровня.
-$levels = @($info.result.levels)
+$levels = @($payload.levels)
 $baseLevelMm = 0
 if ($levels.Count -gt 0) {
     $lowest = $levels | Sort-Object { [double]$_.elevation } | Select-Object -First 1
@@ -212,8 +218,12 @@ if ($CreateWall) {
         Write-Err "Плагин вернул ошибку: $($res.error.message)"
         exit 1
     }
+    if (-not $res.result.Success) {
+        Write-Err "Плагин отказал: $($res.result.Message)"
+        exit 1
+    }
     Write-Ok "стена создана"
-    Write-Info ($res.result | ConvertTo-Json -Depth 6)
+    Write-Info ($res.result.Response | ConvertTo-Json -Depth 6)
     Write-Info "Откатить: Ctrl+Z в Revit."
 }
 
