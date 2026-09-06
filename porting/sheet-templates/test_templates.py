@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from revit_mcp import templates as tpl
+import templates as tpl
 
 LEVELS = [
     {"id": 101, "name": "Этаж 1", "elevation_mm": 0.0},

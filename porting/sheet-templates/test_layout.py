@@ -1,4 +1,4 @@
-from revit_mcp.templates import auto_positions
+from templates import auto_positions
 
 A1_WIDTH, A1_HEIGHT = 841.0, 594.0
 

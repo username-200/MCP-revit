@@ -16,7 +16,8 @@ from typing import Any
 VIEW_KINDS = {"plan", "ceiling_plan", "section", "elevation", "3d", "existing"}
 
 DEFAULT_TEMPLATE_DIRS = [
-    Path(__file__).resolve().parents[3] / "templates",
+    # porting/sheet-templates/templates.py -> корень репозитория -> templates/
+    Path(__file__).resolve().parents[2] / "templates",
 ]
 
 
