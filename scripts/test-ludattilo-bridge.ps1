@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
     Сквозная диагностика связки Claude Desktop -- MCP -- плагин LuDattilo в Revit.

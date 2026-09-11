@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
     Настройка Claude Desktop на работу с плагином revit-mcp и проверка результата.

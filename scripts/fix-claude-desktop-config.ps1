@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
     Диагностика и починка claude_desktop_config.json для сервера revit-mcp.

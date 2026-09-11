@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
     Самопроверка моста MCP-Revit: связь, уровни, создание тестовой стены 1 м.
