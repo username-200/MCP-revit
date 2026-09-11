@@ -230,7 +230,10 @@ if (-not $exe) {
 }
 
 Write-Step "запускаю: $exe"
-Start-Process $exe
+# Через cmd /c start, а не напрямую: запущенный из консоли Claude Desktop
+# наследует её дескрипторы и заливает вывод скрипта своими предупреждениями
+# Electron, из-за чего вердикт теряется в потоке.
+Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', 'start', '""', "`"$exe`"" -WindowStyle Hidden
 Write-Step "жду появления лога сервера (до $WaitSeconds с)..."
 
 $found = $null
