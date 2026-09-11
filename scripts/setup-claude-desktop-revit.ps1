@@ -42,14 +42,37 @@ function Write-Info { param($m) Write-Host "      $m" -ForegroundColor Gray   }
 function Write-Head { param($m) Write-Host ""; Write-Host "  $m" -ForegroundColor White }
 
 $claudeDir = "$env:APPDATA\Claude"
-$cfgPath   = Join-Path $claudeDir 'claude_desktop_config.json'
 $logDir    = Join-Path $claudeDir 'logs'
-$revitLog  = Join-Path $logDir 'mcp-server-revit-mcp.log'
 
 if (-not (Test-Path $claudeDir)) {
     Write-Err "Каталог Claude Desktop не найден: $claudeDir"
     exit 1
 }
+
+# Сборка из Microsoft Store держит конфигурацию сторонних серверов в песочнице
+# пакета, в папке Claude-3p, и файл в %APPDATA%\Claude при этом игнорирует.
+# Какая из копий рабочая -- зависит от способа установки, поэтому пишем во все
+# найденные: лишняя запись безвредна, пропущенная стоит целого сеанса отладки.
+$cfgPaths = @()
+Get-ChildItem "$env:LOCALAPPDATA\Packages" -Filter 'Claude_*' -Directory -ErrorAction SilentlyContinue |
+    ForEach-Object {
+        foreach ($leaf in @('Claude-3p', 'Claude')) {
+            $d = Join-Path $_.FullName "LocalCache\Roaming\$leaf"
+            if (Test-Path $d) { $cfgPaths += (Join-Path $d 'claude_desktop_config.json') }
+        }
+    }
+$cfgPaths += (Join-Path $claudeDir 'claude_desktop_config.json')
+$cfgPaths = $cfgPaths | Select-Object -Unique
+
+# Логи сборки из Store могут лежать и в песочнице пакета, поэтому ждём лог
+# сервера в каждом из каталогов, а не только в %APPDATA%.
+$logDirs = @()
+$cfgPaths | ForEach-Object { Split-Path $_ -Parent } | ForEach-Object {
+    $d = Join-Path $_ 'logs'
+    if (Test-Path $d) { $logDirs += $d }
+}
+if (Test-Path $logDir) { $logDirs += $logDir }
+$logDirs = $logDirs | Select-Object -Unique
 
 # =============================================================================
 # 1. ПУТИ ПЛАГИНА
@@ -85,50 +108,54 @@ if (-not (Test-Path $nodeExe)) {
 Write-Head "2. Конфигурация"
 
 # Ранняя правка вручную могла стереть соседние серверы, поэтому собираем их
-# из всех копий: от старой к свежей, чтобы позднее описание перекрыло раннее.
+# из всех копий и резервных файлов: от старой к свежей, чтобы позднее описание
+# перекрыло раннее.
 $servers = [ordered]@{}
-Get-ChildItem $claudeDir -Filter 'claude_desktop_config.json*' |
-    Sort-Object LastWriteTime |
-    ForEach-Object {
-        $text = [Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes($_.FullName)).TrimStart([char]0xFEFF)
-        try {
-            $found = ($text | ConvertFrom-Json).mcpServers
-            if ($found) {
-                $names = @($found.PSObject.Properties.Name)
-                Write-Info "$($_.Name): $($names -join ', ')"
-                $found.PSObject.Properties | ForEach-Object { $servers[$_.Name] = $_.Value }
-            }
-        } catch {
-            Write-Info "$($_.Name): не разбирается, пропущен"
+$cfgPaths | ForEach-Object { Split-Path $_ -Parent } | Select-Object -Unique | ForEach-Object {
+    Get-ChildItem $_ -Filter 'claude_desktop_config.json*' -ErrorAction SilentlyContinue
+} | Sort-Object LastWriteTime | ForEach-Object {
+    $text = [Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes($_.FullName)).TrimStart([char]0xFEFF)
+    try {
+        $found = ($text | ConvertFrom-Json).mcpServers
+        if ($found) {
+            $names = @($found.PSObject.Properties.Name)
+            Write-Info "$($_.FullName): $($names -join ', ')"
+            $found.PSObject.Properties | ForEach-Object { $servers[$_.Name] = $_.Value }
         }
+    } catch {
+        Write-Info "$($_.FullName): не разбирается, пропущен"
     }
-
-$servers['revit-mcp'] = [ordered]@{ command = $nodeExe; args = @($indexJs) }
-
-if (Test-Path $cfgPath) {
-    $backup = "$cfgPath.bak.$(Get-Date -Format 'yyyyMMdd-HHmmss')"
-    Copy-Item $cfgPath $backup -Force
-    Write-Ok "копия: $(Split-Path $backup -Leaf)"
 }
 
-$out = [ordered]@{ mcpServers = $servers }
-# Строго без BOM: Set-Content -Encoding UTF8 в PS 5.1 добавляет его, и разбор
-# конфигурации в Claude Desktop падает на первом же символе.
-[IO.File]::WriteAllText($cfgPath, ($out | ConvertTo-Json -Depth 12), (New-Object Text.UTF8Encoding($false)))
+$servers['revit-mcp'] = [ordered]@{ command = $nodeExe; args = @($indexJs) }
+$out  = [ordered]@{ mcpServers = $servers }
+$json = $out | ConvertTo-Json -Depth 12
+$stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 
-Write-Ok "серверов записано: $($servers.Count) -- $($servers.Keys -join ', ')"
-
-# Перечитываем с диска: так проверяется именно то, что прочтёт Claude Desktop.
-try {
-    $check = [Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes($cfgPath)).TrimStart([char]0xFEFF) | ConvertFrom-Json
-    foreach ($n in $check.mcpServers.PSObject.Properties.Name) {
-        $e = $check.mcpServers.$n
-        $okCmd = [bool]$e.command -and (Test-Path $e.command)
-        if ($okCmd) { Write-Ok "$n -- команда на месте" } else { Write-Warn "$n -- команда недоступна: $($e.command)" }
+foreach ($path in $cfgPaths) {
+    Write-Step (Split-Path $path -Parent)
+    if (Test-Path $path) {
+        Copy-Item $path "$path.bak.$stamp" -Force
+        Write-Info "копия: claude_desktop_config.json.bak.$stamp"
     }
-} catch {
-    Write-Err "Записанный файл не разбирается: $($_.Exception.Message)"
-    exit 1
+    # Строго без BOM: разбор JSON в Node спотыкается о него на первом символе.
+    [IO.File]::WriteAllText($path, $json, (New-Object Text.UTF8Encoding($false)))
+
+    # Перечитываем с диска: проверяется именно то, что прочтёт Claude Desktop.
+    try {
+        $check = [Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes($path)).TrimStart([char]0xFEFF) | ConvertFrom-Json
+        Write-Ok "записано, серверов: $(@($check.mcpServers.PSObject.Properties.Name).Count)"
+    } catch {
+        Write-Err "записанный файл не разбирается: $($_.Exception.Message)"
+        exit 1
+    }
+}
+
+Write-Ok "серверы: $($servers.Keys -join ', ')"
+foreach ($n in $servers.Keys) {
+    $cmd = $servers[$n].command
+    if ($cmd -and (Test-Path $cmd)) { Write-Ok "$n -- команда на месте" }
+    else { Write-Warn "$n -- команда недоступна: $cmd" }
 }
 
 # =============================================================================
@@ -189,9 +216,12 @@ if ($proc) {
 }
 
 # Лог от прошлого сеанса помешал бы отличить новый запуск от старого.
-if (Test-Path $revitLog) {
-    Move-Item $revitLog "$revitLog.old" -Force
-    Write-Info "прежний лог сервера отложен в mcp-server-revit-mcp.log.old"
+foreach ($d in $logDirs) {
+    $old = Join-Path $d 'mcp-server-revit-mcp.log'
+    if (Test-Path $old) {
+        Move-Item $old "$old.old" -Force
+        Write-Info "прежний лог отложен: $old.old"
+    }
 }
 
 if (-not $exe) {
@@ -203,25 +233,32 @@ Write-Step "запускаю: $exe"
 Start-Process $exe
 Write-Step "жду появления лога сервера (до $WaitSeconds с)..."
 
+$found = $null
 $deadline = (Get-Date).AddSeconds($WaitSeconds)
-while ((Get-Date) -lt $deadline) {
-    if (Test-Path $revitLog) { break }
-    Start-Sleep -Seconds 2
+while ((Get-Date) -lt $deadline -and -not $found) {
+    foreach ($d in $logDirs) {
+        $candidate = Join-Path $d 'mcp-server-revit-mcp.log'
+        if (Test-Path $candidate) { $found = $candidate; break }
+    }
+    if (-not $found) { Start-Sleep -Seconds 2 }
 }
 
 Write-Host ""
-if (Test-Path $revitLog) {
+if ($found) {
     Write-Ok "Claude Desktop запустил revit-mcp"
+    Write-Info $found
     Write-Info "--- последние строки лога ---"
-    Get-Content $revitLog -Tail 20 | ForEach-Object { Write-Info $_ }
+    Get-Content $found -Tail 20 | ForEach-Object { Write-Info $_ }
     Write-Host ""
     Write-Info "В окне Claude Desktop спросите: «покажи информацию о проекте Revit»."
 } else {
     Write-Err "Лог не появился за $WaitSeconds с."
-    Write-Info "Посмотрите Settings -> Developer: есть ли revit-mcp в списке серверов."
-    Write-Info "Другие логи: $logDir"
-    Get-ChildItem $logDir -Filter 'mcp*' -ErrorAction SilentlyContinue |
-        Sort-Object LastWriteTime -Descending | Select-Object -First 5 |
-        ForEach-Object { Write-Info "$($_.Name)  $($_.LastWriteTime)" }
+    Write-Info "Проверьте Settings -> Extensions: перечислен ли там revit-mcp."
+    foreach ($d in $logDirs) {
+        Write-Info "--- $d ---"
+        Get-ChildItem $d -Filter 'mcp*' -ErrorAction SilentlyContinue |
+            Sort-Object LastWriteTime -Descending | Select-Object -First 5 |
+            ForEach-Object { Write-Info "$($_.Name)  $($_.LastWriteTime)" }
+    }
 }
 Write-Host ""
